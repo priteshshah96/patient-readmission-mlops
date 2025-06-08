@@ -7,7 +7,7 @@ A machine learning system that predicts if hospital patients will be readmitted 
 ## Technology Stack
 
 - **Python 3.11+** - Programming language
-- **Azure** - Cloud platform (free tier)
+- **Azure Blob Storage** - Cloud data storage
 - **Databricks** - Data processing and ML platform
 - **MLflow** - Track ML experiments
 - **FastAPI** - Create APIs
@@ -22,13 +22,13 @@ patient-readmission-mlops/
 │   ├── models/            # ML model code
 │   └── api/               # API code
 ├── notebooks/             # Jupyter notebooks for experiments
-├── data/                  # Dataset storage
-│   ├── raw/              # Original data files
-│   └── processed/        # Cleaned data
 ├── configs/              # Configuration files
 ├── tests/                # Test files
 ├── infrastructure/       # Docker and deployment files
-└── docs/                 # Documentation
+├── docs/                 # Documentation
+├── download_data.py      # Azure data pipeline script
+├── .env.example          # Environment variables template
+└── pyproject.toml        # Project dependencies
 ```
 
 ## What We've Done So Far
@@ -47,20 +47,28 @@ patient-readmission-mlops/
 - Core ML libraries: scikit-learn, XGBoost, MLflow
 - Data processing: Polars, pandas
 - API framework: FastAPI
-- Azure integration: azure-storage-blob
+- Azure integration: azure-storage-blob, python-dotenv
+
+### ✅ Cloud Data Pipeline
+- **Azure Storage Account**: `patientdata06082025`
+- **Container**: `patient-data` 
+- **Dataset**: UCI Diabetes 130-US hospitals (18.3 MB)
+- **Files**: `diabetic_data.csv`, `IDS_mapping.csv`
+- **Location**: `raw-data/` folder in Azure Blob Storage
 
 ## Next Steps
 
-1. **Download Dataset** - Get the hospital readmission data
-2. **Set up Azure Storage** - Store data in the cloud
-3. **Connect Databricks** - Set up ML platform
-4. **Data Processing** - Clean and prepare the data
+1. **Connect Databricks** - Set up ML platform and connect to Azure storage
+2. **Data Exploration** - Analyze the diabetes dataset 
+3. **Data Processing** - Clean and prepare the data
+4. **Feature Engineering** - Create ML features
 5. **Model Training** - Build ML models
 6. **API Development** - Create prediction service
 7. **Deployment** - Deploy to Azure
 
 ## Quick Start
 
+### Environment Setup
 ```bash
 # Clone the project
 git clone <repository-url>
@@ -78,39 +86,42 @@ uv run pre-commit install
 uv run pre-commit run --all-files
 ```
 
-## What We're Doing Next
+### Data Pipeline Setup
 
-### Immediate Goal
-Set up the data pipeline - download the dataset and store it in Azure Blob Storage.
-
-### Step-by-Step Plan
-
-**Step 1: Complete the Download Script**
-- Finish the `download_data.py` file we started
-- Add code to download the UCI diabetes dataset
-- Upload it to Azure Blob Storage (not just local files)
-- Add error handling
-
-**Step 2: Set up Azure Storage**
-- Log into Azure portal
-- Create a Storage Account
-- Create a container called "raw-data"
-- Get connection string
-
-**Step 3: Test Data Pipeline**
-- Run our script to download and store data
-- Verify data appears in Azure Blob Storage
-- Check file size and format
-
-**Step 4: Set up Databricks**
-- Sign up for free Databricks account
-- Create a cluster
-- Connect to our Azure storage
-- Test we can read the data
+1. **Create Azure Storage Account** (or use existing)
+2. **Copy environment template**:
+   ```bash
+   cp .env.example .env
+   ```
+3. **Add your Azure connection string** to `.env`:
+   ```
+   AZURE_STORAGE_CONNECTION_STRING=your_connection_string_here
+   AZURE_STORAGE_ACCOUNT_NAME=your_storage_account_name
+   AZURE_CONTAINER_NAME=patient-data
+   ```
+4. **Run the data pipeline**:
+   ```bash
+   python download_data.py
+   ```
 
 ## Current Status
 
-**Phase**: Initial Setup Complete
-**Progress**: 15% complete
-**Working**: Development environment, code quality tools
-**Next**: Complete download script and Azure Storage setup
+**Phase**: Data Pipeline Complete
+**Progress**: 30% complete
+**Working**: 
+- Development environment
+- Code quality tools
+- Azure Blob Storage integration
+- Dataset uploaded to cloud
+
+**Next**: Set up Databricks and begin data analysis
+
+## Dataset Information
+
+**Source**: UCI Machine Learning Repository
+**Name**: Diabetes 130-US hospitals for years 1999-2008
+**Size**: 18.3 MB
+**Records**: ~100,000 patient encounters
+**Features**: Patient demographics, diagnoses, medications, readmission status
+
+The dataset is now stored in Azure Blob Storage and ready for analysis and ML model development.
