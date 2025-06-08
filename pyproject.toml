@@ -1,7 +1,25 @@
 [project]
 name = "patient-readmission-mlops"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
+description = "MLOps pipeline for patient readmission prediction"
 requires-python = ">=3.11"
-dependencies = []
+authors = [
+  {name = "Pritesh Shah", email = "priteshshahwork@gmail.com"}
+]
+
+dependencies = [
+    "polars>=0.20.26",        # Latest stable
+    "pandas>=2.2.2",          # Latest stable  
+    "scikit-learn>=1.5.0",    # Latest
+    "xgboost>=2.1.0",         # Latest
+    "mlflow>=2.13.0",         # Latest
+    "fastapi>=0.111.0",       # Latest
+    "pydantic>=2.7.0",        # Latest
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
