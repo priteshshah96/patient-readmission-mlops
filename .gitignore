@@ -72,4 +72,7 @@ mlruns/
 mlartifacts/
 
 # Pre-commit
-.pre-commit-cache/
+.pre-commit-cache/__pycache__/
+*.pyc
+__pycache__/
+*.pyc
