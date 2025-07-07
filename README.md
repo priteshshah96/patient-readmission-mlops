@@ -449,9 +449,9 @@ If you use this project in academic research, please cite:
 ```bibtex
 @software{patient_readmission_mlops,
   title={Patient Readmission Prediction MLOps Pipeline},
-  author={[Your Name]},
+  author={[Pritesh Shah]},
   year={2025},
-  url={https://github.com/[username]/patient-readmission-mlops}
+  url={https://github.com/[priteshshah96]/patient-readmission-mlops}
 }
 ```
 
@@ -468,7 +468,7 @@ If you use this project in academic research, please cite:
 - **Issues**: Report bugs and request features via [GitHub Issues](../../issues)
 - **Discussions**: Ask questions in [GitHub Discussions](../../discussions)
 - **Documentation**: Full API documentation available at [docs/](docs/)
-- **Email**: [your-email@domain.com] for critical issues
+- **Email**: [priteshshahwork@gmail.com] for critical issues
 
 ## Roadmap
 
