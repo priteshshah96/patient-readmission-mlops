@@ -76,3 +76,5 @@ mlartifacts/
 *.pyc
 __pycache__/
 *.pyc
+# Altair visualization cache files
+altair-data-*.json
