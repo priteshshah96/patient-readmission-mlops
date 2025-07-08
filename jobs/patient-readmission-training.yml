@@ -1,0 +1,23 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+
+type: command
+experiment_name: patient-readmission-prediction
+display_name: patient-readmission-model-training-uv
+description: Train patient readmission prediction models using UV for fast package management
+
+code: ../
+command: cd src && pip install uv && uv sync --frozen && source .venv/bin/activate && python -m models.train_azure
+
+environment:
+  image: mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04:latest
+
+compute: pritshahlecha1
+
+identity:
+  type: managed_identity
+
+tags:
+  project: patient-readmission-prediction
+  model_type: classification
+  use_case: healthcare
+  package_manager: uv
