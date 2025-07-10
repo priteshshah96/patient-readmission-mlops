@@ -1,0 +1,230 @@
+# Patient Readmission Prediction - Docker Compose for Azure Development
+# FIXED: MLflow now uses SQLite for Model Registry support
+
+version: '3.8'
+
+services:
+  # MLflow Tracking Server - FIXED: Force gunicorn to bind to 0.0.0.0
+  mlflow:
+    image: python:3.11-slim
+    container_name: mlflow-server
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow
+      # REMOVED: - ./mlruns:/app/mlruns  # This was causing permission issues
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=sqlite:///mlflow/mlflow.db
+      - MLFLOW_DEFAULT_ARTIFACT_ROOT=/mlflow/artifacts
+      - MLFLOW_SERVE_ARTIFACTS=true
+    command: bash -c "pip install mlflow[extras]==2.13.0 psutil && mkdir -p /mlflow/artifacts && gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 60 --access-logfile - --error-logfile - mlflow.server:app"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - mlops-network
+    restart: unless-stopped
+
+  # Patient Readmission API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: readmission-api
+    ports:
+      - "8000:8000"
+    environment:
+      # API Configuration
+      - APP_ENV=development
+      - LOG_LEVEL=DEBUG
+      - DEBUG=true
+      - PORT=8000
+      
+      # MLflow Configuration - FIXED: Points to SQLite-backed MLflow
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - MODEL_NAME=patient_readmission_predictor
+      - MODEL_STAGE=Production
+      
+      # API Settings
+      - BATCH_SIZE_LIMIT=100
+      - PREDICTION_THRESHOLD=0.5
+      
+      # Azure Configuration (loaded from .env file)
+      - AZURE_STORAGE_CONNECTION_STRING=${AZURE_STORAGE_CONNECTION_STRING}
+      - AZURE_CONTAINER_NAME=${AZURE_CONTAINER_NAME:-patient-data}
+      
+      # CORS Settings for development
+      - CORS_ORIGINS=["http://localhost:3000","http://localhost:8000","http://127.0.0.1:8000"]
+    volumes:
+      - api_logs:/app/logs
+      - ./src:/app/src  # Mount source for development
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live')"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 120s  # Allow time for model loading
+    restart: unless-stopped
+    networks:
+      - mlops-network
+
+  # Redis for caching (optional for production)
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - mlops-network
+    restart: unless-stopped
+    profiles:
+      - caching
+
+  # PostgreSQL for production-grade MLflow backend
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-mlflow
+    environment:
+      - POSTGRES_DB=mlflow
+      - POSTGRES_USER=mlflow
+      - POSTGRES_PASSWORD=mlflow123
+      - POSTGRES_INITDB_ARGS="--encoding=UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mlflow -d mlflow"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - mlops-network
+    restart: unless-stopped
+    profiles:
+      - production
+
+  # MLflow with PostgreSQL backend (production setup)
+  mlflow-prod:
+    image: python:3.11-slim
+    container_name: mlflow-prod
+    ports:
+      - "5001:5000"
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=postgresql://mlflow:mlflow123@postgres:5432/mlflow
+      - MLFLOW_DEFAULT_ARTIFACT_ROOT=/mlflow/artifacts
+    volumes:
+      - mlflow_artifacts:/mlflow/artifacts
+    command: >
+      bash -c "
+        pip install mlflow[extras]==2.13.0 psycopg2-binary &&
+        mlflow server 
+        --host 0.0.0.0 
+        --port 5000 
+        --backend-store-uri postgresql://mlflow:mlflow123@postgres:5432/mlflow
+        --default-artifact-root /mlflow/artifacts
+        --serve-artifacts
+      "
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - mlops-network
+    restart: unless-stopped
+    profiles:
+      - production
+
+  # Prometheus monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - mlops-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # Grafana dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - mlops-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+# Named volumes for persistent data
+volumes:
+  mlflow_data:  # FIXED: Persistent SQLite storage for MLflow
+    driver: local
+    name: mlflow_data
+  mlflow_artifacts:
+    driver: local
+    name: mlflow_artifacts
+  api_logs:
+    driver: local
+    name: api_logs
+  redis_data:
+    driver: local
+    name: redis_data
+  postgres_data:
+    driver: local
+    name: postgres_data
+  prometheus_data:
+    driver: local
+    name: prometheus_data
+  grafana_data:
+    driver: local
+    name: grafana_data
+
+# Custom network for service communication
+networks:
+  mlops-network:
+    driver: bridge
+    name: mlops-network

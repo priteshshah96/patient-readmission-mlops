@@ -181,9 +181,17 @@ class BatchPredictionRequest(BaseModel):
     """Request schema for batch predictions."""
     patients: List[PatientData] = Field(
         ...,
-        max_items=100,
         description="List of patient data (max 100 patients)"
     )
+
+    # Optionally, enforce max length with a validator
+    @classmethod
+    def validate_patients_length(cls, value):
+        if len(value) > 100:
+            raise ValueError("A maximum of 100 patients is allowed per request.")
+        return value
+
+    _validate_patients_length = classmethod(validate_patients_length)
     return_probabilities: bool = Field(
         default=True,
         description="Whether to return prediction probabilities"

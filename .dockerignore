@@ -1,0 +1,178 @@
+# .dockerignore - Optimize Docker build context for Azure Container Registry
+
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments (we build fresh in container)
+.env
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.conda/
+
+# MLOps artifacts (models will be loaded from MLflow)
+mlruns/
+mlartifacts/
+artifacts/
+models/*.pkl
+models/*.joblib
+models/*.model
+*.model
+
+# Data files (avoid copying large datasets to container)
+data/raw/
+data/processed/
+*.csv
+*.parquet
+*.h5
+*.hdf5
+*.feather
+
+# Logs and temporary files
+logs/
+*.log
+*.tmp
+*.temp
+.cache/
+
+# Development and testing
+.pytest_cache/
+.coverage
+.tox/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.vim/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Git (avoid copying git history)
+.git/
+.gitignore
+.gitattributes
+.gitmodules
+
+# Documentation (not needed in container)
+*.md
+docs/
+README*.md
+CHANGELOG.md
+LICENSE
+CONTRIBUTING.md
+
+# Jupyter notebooks (not needed in production)
+.ipynb_checkpoints/
+*.ipynb
+notebooks/
+
+# Testing files
+tests/
+test_*.py
+*_test.py
+conftest.py
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+.pre-commit-config.yaml
+azure-pipelines.yml
+
+# Docker files (avoid infinite recursion)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Infrastructure and deployment configs
+infrastructure/
+deployment/
+k8s/
+kubernetes/
+terraform/
+helm/
+scripts/
+
+# Environment and secrets (security)
+.env*
+.environment
+secrets/
+config.json
+credentials.json
+*.pem
+*.key
+*.crt
+
+# Azure specific
+.azure/
+*.publish
+.azureml/
+
+# Package manager files (we copy specific ones in Dockerfile)
+requirements*.txt
+poetry.lock
+Pipfile*
+conda.yml
+environment.yml
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+wheels/
+
+# Altair visualization cache files
+altair-data-*.json
+
+# Large files that shouldn't be in containers
+*.zip
+*.tar.gz
+*.iso
+*.dmg
+
+# Node.js (if any frontend components)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Reports and outputs
+reports/
+outputs/
+results/
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Temporary directories
+tmp/
+temp/

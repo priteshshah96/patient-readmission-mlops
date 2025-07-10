@@ -1,3 +1,4 @@
+# FIXED: src/api/config.py
 from pydantic_settings import BaseSettings
 from typing import Optional
 import os
@@ -11,8 +12,8 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     debug: bool = False
     
-    # MLflow Configuration
-    mlflow_tracking_uri: str = "file:./mlruns"
+    # MLflow Configuration - FIXED: Default to Docker MLflow
+    mlflow_tracking_uri: str = "http://mlflow:5000"  # Changed from "file:./mlruns"
     model_name: str = "patient_readmission_predictor"
     model_stage: str = "Production"  # or "Staging"
     

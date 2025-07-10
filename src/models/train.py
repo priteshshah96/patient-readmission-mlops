@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+# import tqdm
 import numpy as np
 from typing import Dict, Any, Tuple, Optional
 import logging
@@ -64,14 +65,20 @@ class ReadmissionModelTrainer:
         self.preprocessor = DataPreprocessor()
         self.progress_bar = None
         
-        # Set up MLflow with local file tracking to avoid Azure ML issues
+        # Set up MLflow - FIXED: Respect Docker MLflow server
         try:
-            # Force local file-based tracking
-            mlflow.set_tracking_uri("file:./mlruns")
+            # Use environment variable or default to Docker MLflow server
+            tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", "http://mlflow:5000")
+            mlflow.set_tracking_uri(tracking_uri)
             mlflow.set_experiment(experiment_name)
-            logger.info(f"✅ MLflow experiment '{experiment_name}' ready (local file tracking)")
+            logger.info(f"✅ MLflow experiment '{experiment_name}' ready")
+            logger.info(f"🔗 Tracking URI: {tracking_uri}")
         except Exception as e:
             logger.warning(f"⚠️ MLflow setup issue: {e}")
+            # Fallback to local only if Docker MLflow fails
+            logger.info("🔄 Falling back to local file tracking")
+            mlflow.set_tracking_uri("file:./mlruns")
+            mlflow.set_experiment(experiment_name)
         
         # Progress tracking
         self.total_steps = 0

@@ -8,7 +8,6 @@ import mlflow
 import mlflow.sklearn
 from sklearn.base import BaseEstimator
 import os 
-os.environ['MLFLOW_TRACKING_URI'] = 'file:./mlruns'
 
 from .models import PatientData, PredictionResponse, ReadmissionRisk
 from .config import get_settings

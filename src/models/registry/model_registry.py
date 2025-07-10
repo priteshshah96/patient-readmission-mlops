@@ -1,4 +1,5 @@
 import os
+import os
 import pandas as pd
 import numpy as np
 from typing import Dict, Any, List, Optional, Tuple, Union
@@ -32,8 +33,12 @@ class ModelRegistry:
     Handles model versioning, lifecycle management, and deployment staging.
     """
     
-    def __init__(self, tracking_uri: str = "file:./mlruns"):
+    def __init__(self, tracking_uri: str = None):
         """Initialize model registry with MLflow tracking URI."""
+        if tracking_uri is None:
+            # FIXED: Default to Docker MLflow server instead of file storage
+            tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", "http://mlflow:5000")
+        
         self.tracking_uri = tracking_uri
         mlflow.set_tracking_uri(tracking_uri)
         self.client = MlflowClient()
@@ -43,6 +48,17 @@ class ModelRegistry:
         self.experiment_name = "patient_readmission_prediction"
         
         logger.info(f"✅ Model Registry initialized with tracking URI: {tracking_uri}")
+        logger.info(f"🔗 Connecting to: {tracking_uri}")
+        
+        # Test connection to MLflow server
+        try:
+            # Test if we can access experiments (validates MLflow server connection)
+            experiments = self.client.search_experiments()
+            logger.info(f"✅ MLflow server connection successful - Found {len(experiments)} experiments")
+        except Exception as e:
+            logger.error(f"❌ Failed to connect to MLflow server: {e}")
+            logger.error(f"   Make sure MLflow server is running at: {tracking_uri}")
+            raise ConnectionError(f"Cannot connect to MLflow server at {tracking_uri}")
         
     def create_or_get_registered_model(self) -> str:
         """Create registered model if it doesn't exist."""
